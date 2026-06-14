@@ -78,7 +78,7 @@ Launcher script. Asks the user for a filename and communication period, then ope
 
 ## Requirements
 
-- **RTI Connext DDS** (University Program License — [apply here](https://www.rti.com/university))
+- **RTI Connext DDS** (University Program License — [apply here](https://www.rti.com))
 - **Python 3.x** with `rti.connextdds` package
 - **MATLAB/Simulink 2019** (for Simulink models)
 - **OPAL-RT RT-LAB 2020** (for hardware-in-the-loop scenarios)
@@ -121,3 +121,8 @@ If you use this work, please cite:
 This work was supported by the **RTI University Program** (Real-Time Innovations). Special thanks to Ángel Martínez Bernal for the license management and technical feedback.
 
 Funded in part by **ANID/FONDEQUIP/EQM230041** (Agencia Nacional de Investigación y Desarrollo, Chile).
+
+---
+
+## License Note
+The MIT License in this repository applies only to the Python scripts. RTI Connext DDS is proprietary software owned by Real-Time Innovations (RTI) and is not covered by this license.
