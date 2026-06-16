@@ -37,13 +37,22 @@ DDS QoS configuration: `Reliability = BEST_EFFORT`, `History = KEEP_LAST (depth=
 ## Repository Structure
 
 ```
-├── CoSimTypes.idl       # DDS data type definitions (IDL)
-├── CoSimTypes.py        # Auto-generated Python bindings (rtiddsgen 4.5.0)
-├── N1PUB.py             # Node 1 Publisher: UDP → DDS (float32), with drain + pacing
-├── N1SUB.py             # Node 1 Subscriber: DDS → UDP (double), drain anti-queue
-├── N1_csv.py            # Data logger: UDP binary → CSV (temporal metrics)
-├── Launch_N1.py         # Launcher: opens N1PUB, N1SUB and N1_csv in 3 consoles
-└── README.md            # This file
+├── scripts/
+│   ├── CoSimTypes.idl       # DDS data type definitions (IDL)
+│   ├── CoSimTypes.py        # Auto-generated Python bindings (rtiddsgen 4.5.0)
+│   ├── N1PUB.py             # Node 1 Publisher: UDP → DDS (float32), drain + pacing
+│   ├── N1SUB.py             # Node 1 Subscriber: DDS → UDP (double), anti-queue drain
+│   ├── N1_csv.py            # Data logger: UDP binary → CSV (temporal metrics)
+│   ├── Launch_N1.py         # Launcher: opens N1PUB, N1SUB and N1_csv in 3 consoles
+│   ├── N2PUB.py             # Node 2 Publisher: UDP → DDS (float32), anti-queue drain
+│   ├── N2SUB.py             # Node 2 Subscriber: DDS → UDP (double), anti-queue drain
+│   └── Launch_N2.py         # Launcher: opens N2PUB and N2SUB in 2 consoles
+├── Results/
+│   ├── Test_AC/             # AC simulation results (frequency sweep: 1–50 Hz)
+│   └── Test_DC/             # DC simulation results (Ts_comm sweep: 0.5–2.5 ms)
+├── Thesis_Sebastian_Escobar_Rojas.pdf
+├── License
+└── README.md
 ```
 
 ---
@@ -59,20 +68,29 @@ IDL definition of the two DDS data types used in the co-simulation:
 Auto-generated Python bindings from `CoSimTypes.idl` using RTI Code Generator (rtiddsgen) v4.5.0. Do not modify manually.
 
 ### `N1PUB.py`
-Node 1 Publisher. Receives 4 doubles (32 bytes) via UDP from the OPAL-RT Simulink model, converts them to float32, and publishes them to the DDS topic `DatosSMTopic`. Key features:
+Node 1 Publisher. Receives 4 doubles (32 bytes) via UDP from the OPAL-RT/Simulink model, converts them to float32, and publishes them to the DDS topic `DatosSMTopic`. Key features:
 - Configurable communication period (`Ts_comm`) via argument, environment variable, or interactive prompt.
 - Drain + pacing loop: always publishes the most recent UDP sample at the exact configured period.
 - Optional binary copy to local UDP logger (N1_csv.py).
 - Windows timer resolution boost for sub-millisecond periods.
 
 ### `N1SUB.py`
-Node 1 Subscriber. Reads DDS topic `DatosN2Topic` (PongN2, float32), drains all available samples and keeps only the latest, then forwards it as 2 doubles (16 bytes) via UDP to the OPAL-RT model. Anti-queue design: `KEEP_LAST depth=1`, prevents backlog accumulation.
+Node 1 Subscriber. Reads DDS topic `DatosN2Topic` (PongN2, float32), drains all available samples and keeps only the latest, then forwards it as 2 doubles (16 bytes) via UDP to the OPAL-RT model on Node 1. Anti-queue design: `KEEP_LAST depth=1` prevents backlog accumulation.
 
 ### `N1_csv.py`
-Data logger. Listens for 4 doubles per UDP packet from N1PUB and writes them to a CSV file with wall-clock timestamps (nanosecond resolution). Supports block-based flushing for performance. Used to capture temporal metrics (latency, jitter, packet loss).
+Data logger. Listens for 4 doubles per UDP packet from N1PUB and writes them to a CSV file with nanosecond wall-clock timestamps. Supports block-based flushing for performance. Used to capture temporal metrics (latency, jitter, packet loss).
 
 ### `Launch_N1.py`
-Launcher script. Asks the user for a filename and communication period, then opens three separate console windows running N1PUB, N1SUB, and N1_csv simultaneously. Compatible with Windows and Linux.
+Launcher script for Node 1. Prompts for output filename and communication period (`Ts_comm`), then opens three separate console windows running N1PUB, N1SUB, and N1_csv simultaneously. Compatible with Windows and Linux.
+
+### `N2PUB.py`
+Node 2 Publisher. Receives 2 doubles (16 bytes) via UDP from the Simulink model on Node 2 (`I_demanda_eco2`, `I_demanda`), drains the UDP buffer to keep only the latest packet, and publishes them as float32 to the DDS topic `DatosN2Topic`. Anti-queue design: non-blocking socket drain prevents backlog accumulation.
+
+### `N2SUB.py`
+Node 2 Subscriber. Reads DDS topic `DatosSMTopic` (PingSM, float32), drains all available samples and keeps only the latest, then forwards it as 4 doubles (32 bytes) via UDP to the Simulink model on Node 2. Anti-queue design: `KEEP_LAST depth=1` prevents backlog accumulation.
+
+### `Launch_N2.py`
+Launcher script for Node 2. Opens N2SUB and N2PUB in separate console windows. No user input required — both scripts use default ports unless overridden via environment variables. Compatible with Windows and Linux.
 
 ---
 
@@ -105,6 +123,8 @@ Launcher script. Asks the user for a filename and communication period, then ope
 ## Note on Simulink Models
 
 The Simulink models (DC and AC R-L-C circuits) are not included in this repository due to version compatibility constraints (MATLAB/Simulink 2019 + RT-LAB 2020). The models are simple R-L-C circuits and can be reconstructed from the signal contract defined in `CoSimTypes.idl` and the thesis document.
+
+Raw experimental data (CSV, DAT, and metric logs) are available via [Google Drive](https://drive.google.com/drive/folders/1F6jAq1Vh01C_iYx1T_DBUbmXJsFXSHEo?usp=drive_link).
 
 ---
 
